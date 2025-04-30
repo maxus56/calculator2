@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .calculator {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 300px;
+        }
+        .display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            text-align: right;
+            font-size: 24px;
+            min-height: 40px;
+            word-wrap: break-word;
+            overflow: hidden;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        button {
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .operator {
+            background-color: #ff9500;
+        }
+        .operator:hover {
+            background-color: #cc7700;
+        }
+        .equals {
+            background-color: #28a745;
+        }
+        .equals:hover {
+            background-color: #218838;
+        }
+        .clear {
+            background-color: #dc3545;
+        }
+        .clear:hover {
+            background-color: #c82333;
+        }
+        .error {
+            color: #dc3545;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button class="operator" onclick="appendOperator('/')">/</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+            <button class="operator" onclick="appendOperator('-')">-</button>
+            <button onclick="appendNumber('7')">7</button>
+            <button onclick="appendNumber('8')">8</button>
+            <button onclick="appendNumber('9')">9</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+            <button onclick="appendNumber('4')">4</button>
+            <button onclick="appendNumber('5')">5</button>
+            <button onclick="appendNumber('6')">6</button>
+            <button onclick="appendNumber('1')">1</button>
+            <button onclick="appendNumber('2')">2</button>
+            <button onclick="appendNumber('3')">3</button>
+            <button class="equals" onclick="calculate()">=</button>
+            <button onclick="appendNumber('0')">0</button>
+            <button onclick="appendNumber('.')">.</button>
+        </div>
+    </div>
+
+    <script>
+        let currentInput = '0';
+        let previousInput = '';
+        let operation = null;
+        let shouldResetDisplay = false;
+        let isError = false;
+
+        const display = document.getElementById('display');
+
+        function updateDisplay() {
+            if (isError) {
+                display.textContent = 'Ошибка';
+                display.classList.add('error');
+            } else {
+                display.textContent = formatNumber(currentInput);
+                display.classList.remove('error');
+            }
+        }
+
+        function formatNumber(number) {
+            if (number === '0') return '0';
+            
+            // Удаляем лишние нули после десятичной точки
+            number = number.replace(/\.?0+$/, '');
+            
+            // Если число слишком длинное, используем экспоненциальную запись
+            if (number.length > 12) {
+                return parseFloat(number).toExponential(6);
+            }
+            
+            return number;
+        }
+
+        function appendNumber(number) {
+            if (isError) {
+                clearDisplay();
+            }
+            
+            if (shouldResetDisplay) {
+                currentInput = '0';
+                shouldResetDisplay = false;
+            }
+            
+            // Проверяем, что точка не добавляется повторно
+            if (number === '.' && currentInput.includes('.')) {
+                return;
+            }
+            
+            if (currentInput === '0' && number !== '.') {
+                currentInput = number;
+            } else {
+                currentInput += number;
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            if (isError) {
+                clearDisplay();
+            }
+            
+            if (operation !== null) calculate();
+            previousInput = currentInput;
+            operation = op;
+            shouldResetDisplay = true;
+        }
+
+        function calculate() {
+            if (operation === null || isError) return;
+            
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(currentInput);
+            
+            try {
+                switch (operation) {
+                    case '+':
+                        currentInput = (prev + current).toString();
+                        break;
+                    case '-':
+                        currentInput = (prev - current).toString();
+                        break;
+                    case '*':
+                        currentInput = (prev * current).toString();
+                        break;
+                    case '/':
+                        if (current === 0) {
+                            throw new Error('Деление на ноль');
+                        }
+                        currentInput = (prev / current).toString();
+                        break;
+                }
+                isError = false;
+            } catch (error) {
+                isError = true;
+            }
+            
+            operation = null;
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentInput = '0';
+            previousInput = '';
+            operation = null;
+            shouldResetDisplay = false;
+            isError = false;
+            updateDisplay();
+        }
+
+        // Добавляем поддержку клавиатуры
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            
+            if (key >= '0' && key <= '9') {
+                appendNumber(key);
+            } else if (key === '.') {
+                appendNumber('.');
+            } else if (key === '+' || key === '-' || key === '*' || key === '/') {
+                appendOperator(key);
+            } else if (key === 'Enter' || key === '=') {
+                calculate();
+            } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                clearDisplay();
+            } else if (key === 'Backspace') {
+                if (!isError) {
+                    currentInput = currentInput.slice(0, -1);
+                    if (currentInput === '') currentInput = '0';
+                    updateDisplay();
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
