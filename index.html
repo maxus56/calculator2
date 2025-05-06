@@ -33,6 +33,13 @@
             word-wrap: break-word;
             overflow: hidden;
         }
+        .expression {
+            font-size: 16px;
+            color: #666;
+            min-height: 20px;
+            text-align: right;
+            margin-bottom: 5px;
+        }
         .buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -77,25 +84,26 @@
 </head>
 <body>
     <div class="calculator">
+        <div class="expression" id="expression"></div>
         <div class="display" id="display">0</div>
         <div class="buttons">
             <button class="clear" onclick="clearDisplay()">C</button>
-            <button class="operator" onclick="appendOperator('/')">/</button>
-            <button class="operator" onclick="appendOperator('*')">×</button>
-            <button class="operator" onclick="appendOperator('-')">-</button>
             <button onclick="appendNumber('7')">7</button>
             <button onclick="appendNumber('8')">8</button>
             <button onclick="appendNumber('9')">9</button>
-            <button class="operator" onclick="appendOperator('+')">+</button>
+            <button class="operator" onclick="appendOperator('/')">/</button>
             <button onclick="appendNumber('4')">4</button>
             <button onclick="appendNumber('5')">5</button>
             <button onclick="appendNumber('6')">6</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
             <button onclick="appendNumber('1')">1</button>
             <button onclick="appendNumber('2')">2</button>
             <button onclick="appendNumber('3')">3</button>
-            <button class="equals" onclick="calculate()">=</button>
+            <button class="operator" onclick="appendOperator('-')">-</button>
             <button onclick="appendNumber('0')">0</button>
             <button onclick="appendNumber('.')">.</button>
+            <button class="equals" onclick="calculate()">=</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
         </div>
     </div>
 
@@ -105,8 +113,10 @@
         let operation = null;
         let shouldResetDisplay = false;
         let isError = false;
+        let expression = '';
 
         const display = document.getElementById('display');
+        const expressionDisplay = document.getElementById('expression');
 
         function updateDisplay() {
             if (isError) {
@@ -116,15 +126,14 @@
                 display.textContent = formatNumber(currentInput);
                 display.classList.remove('error');
             }
+            expressionDisplay.textContent = expression;
         }
 
         function formatNumber(number) {
             if (number === '0') return '0';
             
-            // Удаляем лишние нули после десятичной точки
             number = number.replace(/\.?0+$/, '');
             
-            // Если число слишком длинное, используем экспоненциальную запись
             if (number.length > 12) {
                 return parseFloat(number).toExponential(6);
             }
@@ -142,7 +151,6 @@
                 shouldResetDisplay = false;
             }
             
-            // Проверяем, что точка не добавляется повторно
             if (number === '.' && currentInput.includes('.')) {
                 return;
             }
@@ -152,6 +160,7 @@
             } else {
                 currentInput += number;
             }
+            expression += number;
             updateDisplay();
         }
 
@@ -164,6 +173,9 @@
             previousInput = currentInput;
             operation = op;
             shouldResetDisplay = true;
+            
+            expression = formatNumber(currentInput) + ' ' + op + ' ';
+            updateDisplay();
         }
 
         function calculate() {
@@ -191,8 +203,10 @@
                         break;
                 }
                 isError = false;
+                expression = formatNumber(prev) + ' ' + operation + ' ' + formatNumber(current) + ' = ' + formatNumber(currentInput);
             } catch (error) {
                 isError = true;
+                expression = '';
             }
             
             operation = null;
@@ -206,10 +220,10 @@
             operation = null;
             shouldResetDisplay = false;
             isError = false;
+            expression = '';
             updateDisplay();
         }
 
-        // Добавляем поддержку клавиатуры
         document.addEventListener('keydown', (event) => {
             const key = event.key;
             
@@ -226,6 +240,7 @@
             } else if (key === 'Backspace') {
                 if (!isError) {
                     currentInput = currentInput.slice(0, -1);
+                    expression = expression.slice(0, -1);
                     if (currentInput === '') currentInput = '0';
                     updateDisplay();
                 }
