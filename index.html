@@ -87,138 +87,134 @@
         <div class="expression" id="expression"></div>
         <div class="display" id="display">0</div>
         <div class="buttons">
-            <button class="clear" onclick="clearDisplay()">C</button>
-            <button onclick="appendNumber('7')">7</button>
-            <button onclick="appendNumber('8')">8</button>
-            <button onclick="appendNumber('9')">9</button>
-            <button class="operator" onclick="appendOperator('/')">/</button>
-            <button onclick="appendNumber('4')">4</button>
-            <button onclick="appendNumber('5')">5</button>
-            <button onclick="appendNumber('6')">6</button>
-            <button class="operator" onclick="appendOperator('*')">×</button>
-            <button onclick="appendNumber('1')">1</button>
-            <button onclick="appendNumber('2')">2</button>
-            <button onclick="appendNumber('3')">3</button>
-            <button class="operator" onclick="appendOperator('-')">-</button>
-            <button onclick="appendNumber('0')">0</button>
-            <button onclick="appendNumber('.')">.</button>
+            <button class="clear" onclick="clearAll()">C</button>
+            <button onclick="addDigit('7')">7</button>
+            <button onclick="addDigit('8')">8</button>
+            <button onclick="addDigit('9')">9</button>
+            <button class="operator" onclick="setOperation('/')">/</button>
+            <button onclick="addDigit('4')">4</button>
+            <button onclick="addDigit('5')">5</button>
+            <button onclick="addDigit('6')">6</button>
+            <button class="operator" onclick="setOperation('*')">×</button>
+            <button onclick="addDigit('1')">1</button>
+            <button onclick="addDigit('2')">2</button>
+            <button onclick="addDigit('3')">3</button>
+            <button class="operator" onclick="setOperation('-')">-</button>
+            <button onclick="addDigit('0')">0</button>
+            <button onclick="addDecimal()">.</button>
             <button class="equals" onclick="calculate()">=</button>
-            <button class="operator" onclick="appendOperator('+')">+</button>
+            <button class="operator" onclick="setOperation('+')">+</button>
         </div>
     </div>
 
     <script>
-        let currentInput = '0';
-        let previousInput = '';
-        let operation = null;
+        let firstNumber = '';
+        let secondNumber = '';
+        let currentOperation = null;
         let shouldResetDisplay = false;
-        let isError = false;
-        let expression = '';
 
         const display = document.getElementById('display');
         const expressionDisplay = document.getElementById('expression');
 
         function updateDisplay() {
-            if (isError) {
-                display.textContent = 'Ошибка';
-                display.classList.add('error');
-            } else {
-                display.textContent = currentInput;
-                display.classList.remove('error');
+            display.textContent = secondNumber || firstNumber || '0';
+            let expression = '';
+            if (firstNumber) {
+                expression += firstNumber;
+                if (currentOperation) {
+                    expression += ' ' + currentOperation;
+                    if (secondNumber) {
+                        expression += ' ' + secondNumber;
+                    }
+                }
             }
             expressionDisplay.textContent = expression;
         }
 
-        function appendNumber(number) {
-            if (isError) {
-                clearDisplay();
-                return;
-            }
-            
+        function addDigit(digit) {
             if (shouldResetDisplay) {
-                currentInput = '0';
+                secondNumber = '';
                 shouldResetDisplay = false;
             }
-            
-            if (number === '.' && currentInput.includes('.')) {
-                return;
-            }
-            
-            if (currentInput === '0' && number !== '.') {
-                currentInput = number;
+            if (currentOperation) {
+                secondNumber += digit;
             } else {
-                currentInput += number;
+                firstNumber += digit;
             }
-            
-            if (operation === null) {
-                expression = currentInput;
-            } else {
-                expression = previousInput + ' ' + operation + ' ' + currentInput;
-            }
-            
             updateDisplay();
         }
 
-        function appendOperator(op) {
-            if (isError) {
-                clearDisplay();
-                return;
+        function addDecimal() {
+            if (shouldResetDisplay) {
+                secondNumber = '0';
+                shouldResetDisplay = false;
             }
+            if (currentOperation) {
+                if (!secondNumber.includes('.')) {
+                    secondNumber += secondNumber ? '.' : '0.';
+                }
+            } else {
+                if (!firstNumber.includes('.')) {
+                    firstNumber += firstNumber ? '.' : '0.';
+                }
+            }
+            updateDisplay();
+        }
+
+        function setOperation(operation) {
+            if (firstNumber === '') return;
             
-            if (operation !== null) {
+            if (currentOperation && secondNumber !== '') {
                 calculate();
             }
             
-            previousInput = currentInput;
-            operation = op;
+            currentOperation = operation;
             shouldResetDisplay = true;
-            expression = previousInput + ' ' + op;
             updateDisplay();
         }
 
         function calculate() {
-            if (operation === null || isError) return;
-            
-            const prev = parseFloat(previousInput);
-            const current = parseFloat(currentInput);
-            
+            if (!currentOperation || !secondNumber) return;
+
+            const num1 = parseFloat(firstNumber);
+            const num2 = parseFloat(secondNumber);
+            let result;
+
             try {
-                switch (operation) {
+                switch (currentOperation) {
                     case '+':
-                        currentInput = (prev + current).toString();
+                        result = num1 + num2;
                         break;
                     case '-':
-                        currentInput = (prev - current).toString();
+                        result = num1 - num2;
                         break;
                     case '*':
-                        currentInput = (prev * current).toString();
+                        result = num1 * num2;
                         break;
                     case '/':
-                        if (current === 0) {
-                            throw new Error('Деление на ноль');
-                        }
-                        currentInput = (prev / current).toString();
+                        if (num2 === 0) throw new Error('Деление на ноль');
+                        result = num1 / num2;
                         break;
                 }
-                isError = false;
-                expression = previousInput + ' ' + operation + ' ' + currentInput + ' = ' + currentInput;
+
+                firstNumber = result.toString();
+                secondNumber = '';
+                currentOperation = null;
+                shouldResetDisplay = true;
+                updateDisplay();
             } catch (error) {
-                isError = true;
-                expression = '';
+                display.textContent = 'Ошибка';
+                display.classList.add('error');
+                setTimeout(clearAll, 1000);
             }
-            
-            operation = null;
-            shouldResetDisplay = true;
-            updateDisplay();
         }
 
-        function clearDisplay() {
-            currentInput = '0';
-            previousInput = '';
-            operation = null;
+        function clearAll() {
+            firstNumber = '';
+            secondNumber = '';
+            currentOperation = null;
             shouldResetDisplay = false;
-            isError = false;
-            expression = '';
+            display.classList.remove('error');
             updateDisplay();
         }
 
@@ -226,26 +222,22 @@
             const key = event.key;
             
             if (key >= '0' && key <= '9') {
-                appendNumber(key);
+                addDigit(key);
             } else if (key === '.') {
-                appendNumber('.');
+                addDecimal();
             } else if (key === '+' || key === '-' || key === '*' || key === '/') {
-                appendOperator(key);
+                setOperation(key);
             } else if (key === 'Enter' || key === '=') {
                 calculate();
             } else if (key === 'Escape' || key === 'c' || key === 'C') {
-                clearDisplay();
+                clearAll();
             } else if (key === 'Backspace') {
-                if (!isError) {
-                    currentInput = currentInput.slice(0, -1);
-                    if (currentInput === '') currentInput = '0';
-                    if (operation === null) {
-                        expression = currentInput;
-                    } else {
-                        expression = previousInput + ' ' + operation + ' ' + currentInput;
-                    }
-                    updateDisplay();
+                if (currentOperation && secondNumber) {
+                    secondNumber = secondNumber.slice(0, -1);
+                } else {
+                    firstNumber = firstNumber.slice(0, -1);
                 }
+                updateDisplay();
             }
         });
     </script>
