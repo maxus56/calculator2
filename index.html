@@ -123,27 +123,16 @@
                 display.textContent = 'Ошибка';
                 display.classList.add('error');
             } else {
-                display.textContent = formatNumber(currentInput);
+                display.textContent = currentInput;
                 display.classList.remove('error');
             }
             expressionDisplay.textContent = expression;
         }
 
-        function formatNumber(number) {
-            if (number === '0') return '0';
-            
-            number = number.replace(/\.?0+$/, '');
-            
-            if (number.length > 12) {
-                return parseFloat(number).toExponential(6);
-            }
-            
-            return number;
-        }
-
         function appendNumber(number) {
             if (isError) {
                 clearDisplay();
+                return;
             }
             
             if (shouldResetDisplay) {
@@ -160,21 +149,30 @@
             } else {
                 currentInput += number;
             }
-            expression += number;
+            
+            if (operation === null) {
+                expression = currentInput;
+            } else {
+                expression = previousInput + ' ' + operation + ' ' + currentInput;
+            }
+            
             updateDisplay();
         }
 
         function appendOperator(op) {
             if (isError) {
                 clearDisplay();
+                return;
             }
             
-            if (operation !== null) calculate();
+            if (operation !== null) {
+                calculate();
+            }
+            
             previousInput = currentInput;
             operation = op;
             shouldResetDisplay = true;
-            
-            expression = formatNumber(currentInput) + ' ' + op + ' ';
+            expression = previousInput + ' ' + op;
             updateDisplay();
         }
 
@@ -203,7 +201,7 @@
                         break;
                 }
                 isError = false;
-                expression = formatNumber(prev) + ' ' + operation + ' ' + formatNumber(current) + ' = ' + formatNumber(currentInput);
+                expression = previousInput + ' ' + operation + ' ' + currentInput + ' = ' + currentInput;
             } catch (error) {
                 isError = true;
                 expression = '';
@@ -240,8 +238,12 @@
             } else if (key === 'Backspace') {
                 if (!isError) {
                     currentInput = currentInput.slice(0, -1);
-                    expression = expression.slice(0, -1);
                     if (currentInput === '') currentInput = '0';
+                    if (operation === null) {
+                        expression = currentInput;
+                    } else {
+                        expression = previousInput + ' ' + operation + ' ' + currentInput;
+                    }
                     updateDisplay();
                 }
             }
